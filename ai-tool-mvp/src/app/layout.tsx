@@ -1,9 +1,11 @@
+// src/app/layout.tsx
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
+import type { Metadata } from "next";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Creator AI Tool",
-  description: "Automate content creation for creators and small businesses.",
+  description: "Automate your content creation with AI",
 };
 
 export default function RootLayout({
@@ -12,10 +14,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>
-        <ClerkProvider>{children}</ClerkProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <body>{children}</body>
+      </html>
+    </ClerkProvider>
   );
 }

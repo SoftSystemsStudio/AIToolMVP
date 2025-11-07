@@ -1,5 +1,4 @@
 "use client";
-
 import Link from "next/link";
 import { UserButton, SignedIn, SignedOut } from "@clerk/nextjs";
 
@@ -10,24 +9,22 @@ export default function Navbar() {
         Creator AI Tool
       </Link>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center space-x-4">
+        <Link href="/dashboard" className="text-gray-700 hover:text-blue-600">
+          Dashboard
+        </Link>
+        <Link href="/ai" className="text-gray-700 hover:text-blue-600">
+          AI Prompt
+        </Link>
+
+        <SignedIn>
+          <UserButton afterSignOutUrl="/" />
+        </SignedIn>
         <SignedOut>
-          <Link
-            href="/login"
-            className="text-sm font-medium text-gray-700 hover:text-blue-600"
-          >
+          <Link href="/login" className="bg-blue-600 text-white px-4 py-2 rounded">
             Login
           </Link>
         </SignedOut>
-        <SignedIn>
-          <Link
-            href="/dashboard"
-            className="text-sm font-medium text-gray-700 hover:text-blue-600"
-          >
-            Dashboard
-          </Link>
-          <UserButton afterSignOutUrl="/" />
-        </SignedIn>
       </div>
     </nav>
   );

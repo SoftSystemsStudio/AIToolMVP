@@ -1,26 +1,62 @@
 "use client";
+import { useState } from "react";
+import { generateContent, saveGeneratedContent } from "@/app/actions";
 
-import { UserButton, useUser } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+export default function Dashboard() {
+  const [prompt, setPrompt] = useState("");
+  const [output, setOutput] = useState("");
+  const [loading, setLoading] = useState(false);
 
-export default function DashboardPage() {
-  const { user, isSignedIn } = useUser();
-  const router = useRouter();
+  const handleGenerate = async () => {
+    if (!prompt.trim()) return;
 
-  useEffect(() => {
-    if (!isSignedIn) router.push("/login");
-  }, [isSignedIn, router]);
+    setLoading(true);
+    try {
+      // 1️⃣ Generate text with OpenAI (Server Action)
+      const result = await generateContent(prompt);
+      
+      if (!result.success) {
+        console.error("Failed to generate content");
+        return;
+      }
 
-  if (!isSignedIn) return null;
+      setOutput(result.content);
+
+      // 2️⃣ Save to Xano using Server Action
+      const saveResult = await saveGeneratedContent(prompt, result.content);
+      
+      if (!saveResult.success) {
+        console.error("Failed to save to Xano");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Welcome, {user?.firstName || "Creator"}!</h1>
-        <UserButton afterSignOutUrl="/" />
-      </div>
-      <p className="text-gray-600">This is your AI automation dashboard.</p>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">AI Content Generator</h1>
+      <textarea
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        placeholder="Enter your prompt..."
+        className="w-full p-3 border rounded mb-4"
+      />
+      <button
+        onClick={handleGenerate}
+        disabled={loading}
+        className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+      >
+        {loading ? "Generating..." : "Generate Content"}
+      </button>
+      {output && (
+        <div className="mt-6 p-4 border rounded bg-gray-50">
+          <h2 className="text-lg font-semibold mb-2">Generated Output</h2>
+          <p>{output}</p>
+        </div>
+      )}
     </div>
   );
 }

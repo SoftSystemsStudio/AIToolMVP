@@ -1,0 +1,27 @@
+import axios from "axios";
+import { auth } from "@clerk/nextjs/server";
+
+const XANO_BASE_URL = process.env.XANO_API_BASE_URL!;
+
+/**
+ * Universal helper for making authenticated requests to Xano.
+ */
+export async function xanoClient(endpoint: string, options: any = {}) {
+  const session = await auth();
+  const token = await session.getToken({ template: "xano" });
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+    ...options.headers,
+  };
+
+  const res = await axios({
+    url: `${XANO_BASE_URL}${endpoint}`,
+    method: options.method || "GET",
+    headers,
+    data: options.body || null,
+  });
+
+  return res.data;
+}
