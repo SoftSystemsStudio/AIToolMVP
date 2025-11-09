@@ -1,60 +1,77 @@
 "use client";
-import { useState } from "react";
-import { generateContent, saveGeneratedContent } from "@/app/actions";
 
-export default function Dashboard() {
-  const [prompt, setPrompt] = useState("");
-  const [output, setOutput] = useState("");
-  const [loading, setLoading] = useState(false);
+import { useEffect, useState } from "react";
 
-  const handleGenerate = async () => {
-    if (!prompt.trim()) return;
+interface ContentItem {
+  id: number;
+  prompt: string;
+  result: string;
+  created_at: string;
+}
 
-    setLoading(true);
-    try {
-      // 1️⃣ Generate text with OpenAI (Server Action)
-      const result = await generateContent(prompt);
-      
-      if (!result.success) {
-        console.error("Failed to generate content");
-        return;
+export default function DashboardPage() {
+  const [content, setContent] = useState<ContentItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const res = await fetch("/api/xano");
+        if (!res.ok) throw new Error("Failed to fetch");
+        const data = await res.json();
+        setContent(data);
+      } catch {
+        setError("Failed to load content.");
+      } finally {
+        setLoading(false);
       }
-
-      setOutput(result.content);
-
-      // 2️⃣ Save to Xano using Server Action
-      const saveResult = await saveGeneratedContent(prompt, result.content);
-      
-      if (!saveResult.success) {
-        console.error("Failed to save to Xano");
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
-  };
+    loadData();
+  }, []);
+
+  async function handleDelete(id: number) {
+    if (!confirm("Delete this item?")) return;
+    try {
+      const res = await fetch("/api/xano", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error();
+      setContent((prev) => prev.filter((c) => c.id !== id));
+    } catch {
+      alert("Failed to delete");
+    }
+  }
+
+  if (loading) return <p className="p-6">Loading...</p>;
+  if (error) return <p className="p-6 text-red-600">{error}</p>;
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">AI Content Generator</h1>
-      <textarea
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        placeholder="Enter your prompt..."
-        className="w-full p-3 border rounded mb-4"
-      />
-      <button
-        onClick={handleGenerate}
-        disabled={loading}
-        className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
-      >
-        {loading ? "Generating..." : "Generate Content"}
-      </button>
-      {output && (
-        <div className="mt-6 p-4 border rounded bg-gray-50">
-          <h2 className="text-lg font-semibold mb-2">Generated Output</h2>
-          <p>{output}</p>
+    <div className="p-8">
+      <h1 className="text-3xl font-bold mb-6">Your Generated Content</h1>
+      {content.length === 0 ? (
+        <p>No content yet.</p>
+      ) : (
+        <div className="grid gap-6">
+          {content.map((item) => (
+            <div key={item.id} className="bg-white rounded-xl shadow p-6">
+              <div className="flex justify-between mb-2">
+                <h2 className="text-lg font-semibold">{item.prompt}</h2>
+                <button
+                  onClick={() => handleDelete(item.id)}
+                  className="text-sm text-red-600 hover:underline"
+                >
+                  Delete
+                </button>
+              </div>
+              <p>{item.result}</p>
+              <p className="text-xs text-gray-400 mt-3">
+                {new Date(item.created_at).toLocaleString()}
+              </p>
+            </div>
+          ))}
         </div>
       )}
     </div>
